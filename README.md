@@ -1,262 +1,197 @@
-# NIST 'Round 2' Additional Digital Signatures Performance Evaluation  
+# NIST Round 3 Additional Digital Signatures: PKI / X.509 Performance Evaluation
 
-Performance benchmarks on the fourteen 'Round 2' additional digital-signature algorithms submitted to *NIST's Post-Quantum Cryptography Round 2 — Additional Digital Signature Schemes* [^1], conducted to analyze their performance in the context of public key infrastructure (PKI). More specifically, we evaluate the performance of these algorithms when integrated into OpenSSL following the X.509 standard - not just the raw algorithm performance. 
+This repository benchmarks post-quantum digital-signature schemes in an OpenSSL/X.509 public-key infrastructure workflow rather than measuring only raw signature primitives.
 
-Jump to [Building & Benchmarking](#building--benchmarking) for instructions on how to utilize this benchmarking setup.  
-
-> [!NOTE]  
-> This repository uses our own forks of liboqs and oqs-provider, cloned during inital setup. They can be found at the following links:
-> - liboqs fork: [https://github.com/NectarCoder/liboqs/tree/ds-0.14.0-round2-dev](https://github.com/NectarCoder/liboqs/tree/ds-0.14.0-round2-dev)
-> - oqs-provider fork: [https://github.com/NectarCoder/oqs-provider/tree/0.10.0-round2-dev](https://github.com/NectarCoder/oqs-provider/tree/0.10.0-round2-dev)
-
-## Project Context: Algorithm & Metrics
-
-### List of Algorithms
-
-The following 14 Round 2 algorithms are benchmarked [^1]:  
-
-- CROSS
-- FAEST
-- HAWK
-- LESS
-- MAYO
-- Mirath
-- MQOM
-- PERK
-- QR-UOV
-- RYDE
-- SDitH
-- SNOVA
-- SQISign
-- UOV
-
-In order to provide a comparative baseline, the current 3 standardized schemes [^2] are also benchmarked:  
-
-- CRYSTALS-Dilithium (Now known as ML-DSA) (FIPS 204)
-- Sphincs+ (Now known as SLH-DSA) (FIPS 205)
-- FALCON (To be standardized as FN-DSA) (FIPS 206)
-
-### What are the benchmarks?  
-
-The benchmarks focus on measuring the performance of each algorithm version in terms of key generation, request, signing, and verification times.  
-For each metric, we respectively note the algorithm version and the NIST security level (1, 2, 3, 4, 5) [^3].
-In general, the objective is to find:  
-
-- Time taken to:
-    - Generate a private & public key pair
-    - Generate Certificate Signing Request (CSR)
-    - Sign the CSR and generate a self-signed certificate
-    - Verify the self-signed certificate (in milliseconds)
-- CPU cycles taken to:
-    - Generate a private & public key pair
-    - Generate Certificate Signing Request (CSR)
-    - Sign the CSR and generate a self-signed certificate
-    - Verify the self-signed certificate (in CPU cycles)
-- Memory consumption during:
-    - Key pair generation
-    - CSR generation
-    - Certificate signing
-    - Certificate verification (in KB)
-
-We also note the following details per algorithm version:
-- Algorithm ID (e.g. p256_mldsa44 = Dilithium/ML-DSA NIST Level 2, combined with p256 ECDSA)
-- Algorithm Name (e.g. ML-DSA/Dilithium)
-- NIST Security Level
-- Public Key Size (in bytes)
-- Private Key Size (in bytes)
-- Signature Size (in bytes)
-
-More technically, we define the metrics listed below:  
-
-<details>
-<summary>Click to expand: Full List of Metrics</summary>
-
-- **User & kernel time** *(total CPU time, in milliseconds)* for <u>generating the private/public keypair</u>
-- **User & kernel time** *(total CPU time, in milliseconds)* for <u>generating the CSR</u>
-- **User & kernel time** *(total CPU time, in milliseconds)* for <u>signing CSR & generate a self-signed certificate</u>
-- **User & kernel time** *(total CPU time, in milliseconds)* for <u>verifying the self-signed certificate</u>
-- **Real time** *(wall-clock time, in milliseconds)* for <u>generating the private/public keypair</u>
-- **Real time** *(wall-clock time, in milliseconds)* for <u>generating the CSR</u>
-- **Real time** *(wall-clock time, in milliseconds)* for <u>signing CSR & generating a self-signed certificate</u>
-- **Real time** *(wall-clock time, in milliseconds)* for <u>verifying the self-signed certificate</u>
-- **CPU Cycles** for <u>generating the private/public keypair</u>
-- **CPU Cycles** for <u>generating the CSR</u>
-- **CPU Cycles** for <u>signing CSR & generating a self-signed certificate</u>
-- **CPU Cycles** for <u>verifying the self-signed certificate</u>
-- **Maximum memory usage/Peak RSS (Resident Set Size)** *(in KB)* for <u>generating the private/public keypair</u>
-- **Maximum memory usage/Peak RSS (Resident Set Size)** *(in KB)* for <u>generating the CSR</u>
-- **Maximum memory usage/Peak RSS (Resident Set Size)** *(in KB)* for <u>signing CSR & generating a self-signed certificate</u>
-- **Maximum memory usage/Peak RSS (Resident Set Size)** *(in KB)* for <u>verifying the self-signed certificate</u>
-
-</details>
-
-Based on these metrics, the actual benchmarks are calculated ***(over 1000 attempts for each algorithm)***:
-
-<details>
-<summary>Click to expand: Full List of Benchmarks</summary>
-
-- **Average CPU time** for <u>generating the private/public keypair</u>
-- **Average CPU time** for <u>generating the CSR</u>
-- **Average CPU time** for <u>signing CSR & generating a self-signed certificate</u>
-- **Average CPU time** for <u>verifying the self-signed certificate</u>
-- **Average wall-clock time** for <u>generating the private/public keypair</u>
-- **Average wall-clock time** for <u>generating the CSR</u>
-- **Average wall-clock time** for <u>signing CSR & generating a self-signed certificate</u>
-- **Average wall-clock time** for <u>verifying the self-signed certificate</u>
-- **Median CPU time** for <u>generating the private/public keypair</u>
-- **Median CPU time** for <u>generating the CSR</u>
-- **Median CPU time** for <u>signing CSR & generating a self-signed certificate</u>
-- **Median CPU time** for <u>verifying the self-signed certificate</u>
-- **Median wall-clock time** for <u>generating the private/public keypair</u>
-- **Median wall-clock time** for <u>generating the CSR</u>
-- **Median wall-clock time** for <u>signing CSR & generating a self-signed certificate</u>
-- **Median wall-clock time** for <u>verifying the self-signed certificate</u>
-- **Average CPU Cycles** for <u>generating the private/public keypair</u>
-- **Average CPU Cycles** for <u>generating the CSR</u>
-- **Average CPU Cycles** for <u>signing CSR & generating a self-signed certificate</u>
-- **Average CPU Cycles** for <u>verifying the self-signed certificate</u>
-- **Median CPU Cycles** for <u>generating the private/public keypair</u>
-- **Median CPU Cycles** for <u>generating the CSR</u>
-- **Median CPU Cycles** for <u>signing CSR & generating a self-signed certificate</u>
-- **Median CPU Cycles** for <u>verifying the self-signed certificate</u>
-- **Average Peak RSS** for <u>generating the private/public keypair</u>
-- **Average Peak RSS** for <u>generating the CSR</u>
-- **Average Peak RSS** for <u>signing CSR & generating a self-signed certificate</u>
-- **Average Peak RSS** for <u>verifying the self-signed certificate</u>
-- **Median Peak RSS** for <u>generating the private/public keypair</u>
-- **Median Peak RSS** for <u>generating the CSR</u>
-- **Median Peak RSS** for <u>signing CSR & generating a self-signed certificate</u>
-- **Median Peak RSS** for <u>verifying the self-signed certificate</u>
-
-</details>
-
-## Building & Benchmarking
-
-### Prerequisites
-
-This project uses OpenSSL, liboqs, and oqs-provider; these must be setup before running benchmarks.  
-
-> [!WARNING]
-> These instructions are designed for a <u>Bash shell environment on Ubuntu (22-24)</u>. Running them on other platforms may require manual adjustments or additional dependencies.
-
-
-1. Setup Dependencies  
-From the project root, run [scripts/install_dependencies.sh](/scripts/install_dependencies.sh):  
-
-```bash
-# sudo access is required
-./scripts/install_dependencies.sh
-```
-
-2. Setup OpenSSL with oqs-provider and liboqs
-From the project root, run [scripts/install_pqc_openssl.sh](/scripts/install_pqc_openssl.sh):
-
-```bash
-# This version of OpenSSL does not override the system install
-# and is local to the project directory.
-./scripts/install_pqc_openssl.sh
-```
-
-3. Set perf permissions
-To be able to count CPU cycles, the system perf paranoia level needs to be set to 1 or lower.  
-From the project root, run [scripts/set_perf_level.sh](/scripts/set_perf_level.sh) (This will set the level to 1): 
-
-```bash
-# sudo access is required
-./scripts/set_perf_level.sh
-```
-
-> [!WARNING]
-> Setting perf paranoia to 1 lowers kernel security controls; do not leave this enabled on shared or production systems.
-> 
-> To revert after benchmarking, run:
-
-```bash
-# sudo access is required
-./scripts/reset_perf_level.sh
-```
-
-### Benchmarking
+The current work is a migration of the earlier NIST Additional Signatures Round 2 benchmark to the Round 3 candidate set and updated implementations.
 
 > [!IMPORTANT]
-> Make sure you have run the dependency install and OpenSSL/oqs setup scripts before running benchmarks.  
-> Skipping these steps can lead to failures or missing results.  
+> **Round 3 migration is still in progress.**
+>
+> The custom `liboqs` and `oqs-provider` integrations are under active build and validation. Some benchmark/test metadata in this repository still reflects Round 2 parameter sets and identifiers. Do not treat current benchmark output as final Round 3 results until the migration checklist is complete.
 
-You can run the benchmarks Python script like so:  
+## NIST Round 3 scope
+
+NIST announced nine Round 3 Additional Digital Signature candidates on May 14, 2026:
+
+- FAEST
+- HAWK
+- MAYO
+- MQOM
+- QR-UOV
+- SDitH
+- SNOVA
+- SQIsign
+- UOV
+
+HAWK has since been withdrawn from the NIST Additional Digital Signatures process. The active Round 3 benchmark therefore focuses on the remaining eight candidates. HAWK may be retained only as an explicitly labeled historical comparison.
+
+Official NIST Round 3 page:
+https://csrc.nist.gov/projects/pqc-dig-sig/round-3-additional-signatures
+
+NIST Round 3 announcement:
+https://csrc.nist.gov/News/2026/nist-advances-9-candidates-to-the-3rd-round-of-pqc
+
+## Custom Open Quantum Safe forks
+
+This project uses research forks of `liboqs` and `oqs-provider` so that Round 3 candidate implementations and controlled backend variants can be exposed through OpenSSL.
+
+- `liboqs`: https://github.com/DoNotDisturbs/liboqs/tree/ds-0.16.0-round3-dev
+- `oqs-provider`: https://github.com/DoNotDisturbs/oqs-provider/tree/0.10.0-round3-dev
+
+The top-level repository also contains these repositories as Git submodules.
+
+> [!WARNING]
+> The submodule commit pointers on `pqc-benchmarking-v3/main` may temporarily lag the active Round 3 development branches while integration work is being validated. Update the submodule pointers only after the corresponding custom branch build has passed and the branch has been pushed.
+
+## Current integration targets
+
+| Family | NIST Round 3 status | Benchmark backend plan | Integration status |
+|---|---|---|---|
+| FAEST | Active | REF + AVX2 | Custom `liboqs` integration under validation |
+| HAWK | Withdrawn | Historical only | Not part of the active Round 3 benchmark |
+| MAYO | Active | Current liboqs Round 3 implementation | Present in current Round 3 stack |
+| MQOM | Active | Current liboqs Round 3 implementation | Present in current Round 3 stack |
+| QR-UOV | Active | REF + AVX2; AES/SHAKE variants | Custom `liboqs` integration under validation |
+| SDitH | Active | REF + AVX2 | Custom per-variant Round 3 integration under validation |
+| SNOVA | Active | Current liboqs Round 3 implementation | Present in current Round 3 stack |
+| SQIsign | Active | REF + Broadwell | Custom `liboqs` integration under validation |
+| UOV | Active | Current liboqs Round 3 implementation | Present in current Round 3 stack |
+
+For custom candidate integrations, official candidate source files are kept unchanged. Adaptation is performed in the integration layer, such as CMake configuration, liboqs wrappers, namespace adapters, provider metadata, and OpenSSL-facing registration.
+
+## Baselines
+
+The benchmark can also include established or standardized signature schemes for comparison:
+
+- ML-DSA / CRYSTALS-Dilithium
+- SLH-DSA / SPHINCS+
+- Falcon / FN-DSA work in progress at NIST
+- RSA, when a classical baseline is useful
+
+These baselines must be labeled separately from the NIST Additional Digital Signatures Round 3 candidates.
+
+## What is benchmarked?
+
+The main benchmark is the X.509 lifecycle for each enabled signature method:
+
+1. private/public key-pair generation;
+2. Certificate Signing Request (CSR) generation;
+3. certificate signing / self-signed certificate generation;
+4. certificate verification.
+
+The benchmark records, where available:
+
+- user and kernel CPU time;
+- wall-clock time;
+- CPU cycles;
+- maximum resident set size / Peak RSS;
+- public-key size;
+- private-key size;
+- signature size;
+- encoded X.509 artifact sizes such as SPKI, CSR, certificate, and certificate-chain size.
+
+The project is X.509-first. TLS measurements are a separate later stage and must not be mixed into the primary PKI benchmark unless explicitly enabled and documented.
+
+## Repetition policy
+
+The final benchmark protocol targets repeated measurements for stable summary statistics.
+
+> [!CAUTION]
+> During Round 3 integration testing, `run_benchmarks.py` currently defaults to **1 run** so failures can be debugged quickly. The final experimental run count must be changed and frozen before collecting publication-quality results. Previous documentation referring to 1000 runs should be treated as the target protocol, not the current script default.
+
+For each final benchmark configuration, record the exact:
+
+- repository commit;
+- `liboqs` commit;
+- `oqs-provider` commit;
+- OpenSSL version;
+- compiler and compiler version;
+- CPU model and enabled instruction set;
+- build flags;
+- algorithm/backend identifier;
+- run count.
+
+## Build status
+
+The previous `scripts/install_pqc_openssl.sh` workflow still contains Round 2 branch names and should **not** be used as the authoritative Round 3 setup procedure until it is rewritten and validated.
+
+During the migration, build the three layers explicitly:
+
+```text
+custom liboqs
+    ↓
+custom oqs-provider generated against that liboqs source tree
+    ↓
+OpenSSL 3.x loading the resulting oqsprovider module
+```
+
+The current development branches are:
+
+```text
+liboqs:       ds-0.16.0-round3-dev
+oqs-provider: 0.10.0-round3-dev
+```
+
+## Benchmarking
+
+Once the Round 3 build is frozen and verified, benchmark execution remains centered on:
 
 ```bash
-# From the project root:
 ./run_benchmarks.py
 ```
 
-If you want to run the benchmarks headless, use the `run_benchmarking_headless.sh` script:  
+Headless execution:
 
 ```bash
-# From the project root:
-./run_benchmarks_headless.sh
-# Will output:
-# - run_benchmarks.log file with combined stdout and stderr
+./run_benchmarking_headless.sh
 ```
 
-Once benchmarks are complete, results will be available in `results/benchmarks.csv`.  
+Results are written under the project `results/` directory.
 
 > [!TIP]
-> For consistent benchmarking results, run the scripts on an idle machine and avoid running other CPU-intensive tasks during a benchmark run.
+> Run performance experiments on an otherwise idle system. Record CPU frequency/governor settings and avoid mixing measurements collected under different build flags or hardware conditions.
 
-You can clean all built files with:  
+## Testing
+
+Family-level tests are dispatched with:
 
 ```bash
-# From the project root:
+./tests/run_tests.sh <FAMILY>
+```
+
+For example:
+
+```bash
+./tests/run_tests.sh FAEST
+./tests/run_tests.sh QR-UOV
+./tests/run_tests.sh SDitH
+./tests/run_tests.sh SQISign
+```
+
+The Round 2 test-family list is also being migrated. A family should be considered supported only when its current Round 3 provider identifiers successfully complete key generation, CSR creation, certificate creation, and verification.
+
+## Reproducibility and source integrity
+
+For research reproducibility:
+
+- official candidate source files should remain byte-for-byte unchanged whenever the integration policy requires source preservation;
+- build/integration wrappers should be clearly separated from official candidate source;
+- REF and optimized backends should be independently addressable when both are benchmarked;
+- frozen scientific artifacts must not be overwritten by later diagnostic runs;
+- source/archive hashes and exact commit hashes should be recorded with final results;
+- hard-coded Round 2 key/signature sizes must be removed or independently validated before Round 3 benchmarking.
+
+## Cleaning
+
+Project-level temporary benchmark output can be inspected or removed with:
+
+```bash
+./clean --dry-run
 ./clean --apply
-
-# Usage: ./clean (--dry-run|--apply) [-oqs]
-# Options:
-#   --dry-run   List what would be removed (no deletions)
-#   --apply     Perform removals
-#   -oqs        Also remove top-level oqs-provider directory (disabled by default)
 ```
 
-### Testing  
+Read the output before deleting submodule/build data.
 
-You can run tests for all algorithm families or a specific family.  
-From the project root, use the script [tests/run_tests.sh](/tests/run_tests.sh) - see usage examples below.
+## License
 
-- Run a single family (example: CROSS):
-
-```bash
-./tests/run_tests.sh CROSS
-```
-
-- Run all families:
-
-```bash
-./tests/run_tests.sh
-```
-
-- Override which OpenSSL binary is used (useful for a locally-built wrapper):
-
-```bash
-OPENSSL=/path/to/openssl ./tests/run_tests.sh
-```
-
-- Disable colored output (useful when redirecting output or in CI):
-
-```bash
-NO_COLOR=1 ./tests/run_tests.sh CROSS
-```
-
-- Usage help:
-
-```bash
-./tests/run_tests.sh --help
-```
-
----
-
-##### References & Notes
-
-[^1]: List of Round 2 Digital Signature Candidates: [Round 2 Additional Signatures](https://csrc.nist.gov/Projects/pqc-dig-sig/round-2-additional-signatures)  
-
-[^2]: Current standardized PQC Signature Schemes: [NIST Releases First 3 Finalized Post-Quantum Encryption Standards](https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards)   
-
-[^3]: By algorithm version, we mean the specific level of the algorithm, e.g. for Dilithium (which is one algorithm): p256_mldsa44 (level 2), p384_mldsa65 (level 3), & p521_mldsa87 (level 5) - each with different security levels. Also see: NIST Security Levels: [PQC Security (Evaluation Criteria)](https://csrc.nist.gov/projects/post-quantum-cryptography/post-quantum-cryptography-standardization/evaluation-criteria/security-(evaluation-criteria))  
+See [`LICENSE.md`](LICENSE.md).
